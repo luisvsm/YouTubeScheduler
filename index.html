@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+    <style>
+        /* Normal white Button as seen on Google.com*/
+        button {
+            color: #444444;
+            background: #F3F3F3;
+            border: 1px #DADADA solid;
+            padding: 5px 10px;
+            border-radius: 2px;
+            font-weight: bold;
+            font-size: 9pt;
+            outline: none;
+        }
+
+        button:hover {
+            border: 1px #C6C6C6 solid;
+            box-shadow: 1px 1px 1px #EAEAEA;
+            color: #333333;
+            background: #F7F7F7;
+        }
+
+        button:active {
+            box-shadow: inset 1px 1px 1px #DFDFDF;
+        }
+
+        /* Blue button as seen on translate.google.com*/
+        button.blue {
+            color: white;
+            background: #4C8FFB;
+            border: 1px #3079ED solid;
+            box-shadow: inset 0 1px 0 #80B0FB;
+        }
+
+        button.blue:hover {
+            border: 1px #2F5BB7 solid;
+            box-shadow: 0 1px 1px #EAEAEA, inset 0 1px 0 #5A94F1;
+            background: #3F83F1;
+        }
+
+        button.blue:active {
+            box-shadow: inset 0 2px 5px #2370FE;
+        }
+
+        /* Orange button as seen on blogger.com*/
+        button.orange {
+            color: white;
+            border: 1px solid #FB8F3D;
+            background: -webkit-linear-gradient(top, #FDA251, #FB8F3D);
+            background: -moz-linear-gradient(top, #FDA251, #FB8F3D);
+            background: -ms-linear-gradient(top, #FDA251, #FB8F3D);
+        }
+
+        button.orange:hover {
+            border: 1px solid #EB5200;
+            background: -webkit-linear-gradient(top, #FD924C, #F9760B);
+            background: -moz-linear-gradient(top, #FD924C, #F9760B);
+            background: -ms-linear-gradient(top, #FD924C, #F9760B);
+            box-shadow: 0 1px #EFEFEF;
+        }
+
+        button.orange:active {
+            box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Red Google Button as seen on drive.google.com */
+        button.red {
+            background: -webkit-linear-gradient(top, #DD4B39, #D14836);
+            background: -moz-linear-gradient(top, #DD4B39, #D14836);
+            background: -ms-linear-gradient(top, #DD4B39, #D14836);
+            border: 1px solid #DD4B39;
+            color: white;
+            text-shadow: 0 1px 0 #C04131;
+        }
+
+        button.red:hover {
+            background: -webkit-linear-gradient(top, #DD4B39, #C53727);
+            background: -moz-linear-gradient(top, #DD4B39, #C53727);
+            background: -ms-linear-gradient(top, #DD4B39, #C53727);
+            border: 1px solid #AF301F;
+        }
+
+        button.red:active {
+            box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.2);
+            background: -webkit-linear-gradient(top, #D74736, #AD2719);
+            background: -moz-linear-gradient(top, #D74736, #AD2719);
+            background: -ms-linear-gradient(top, #D74736, #AD2719);
+        }
+
+
+
+        /*=======================================*/
+
+        body {
+            margin: 50px;
+        }
+
+        #queueTable li {
+            height: 60px;
+            list-style: none;
+        }
+
+        #queueTable li button {
+            margin: 2px;
+            height: 28px;
+        }
+
+        #queueTable li input {
+            margin: 2px;
+            height: 20px;
+            padding: 2px;
+        }
+
+        #queueTable li img {
+            height: 28px;
+            vertical-align: middle;
+            margin: 0px 0px 0px 20px;
+        }
+
+        #queueTable li img:hover {
+            cursor: pointer;
+        }
+
+        #currentlyPlaying p,
+        #currentlyPlaying div {
+            display: inline;
+        }
+
+        #currentlyPlaying {
+            margin: 20px 0px;
+        }
+    </style>
+    <script src="html5sortable.min.js"></script>
+</head>
+
+<body>
+    <button class="red" onclick="playNextVideo()">Play Next</button>
+    <div id="currentlyPlaying">
+        <b>Currently Playing</b>
+        <br />
+        <p>Note: </p>
+        <div id="playingNote">N/A</div>
+        <br />
+        <p>VideoID:</p>
+        <div id="playingVideoID">N/A</div>
+        <br />
+        <p>Time Remaining:</p>
+        <div id="playingRemaining">N/A</div>
+        <br />
+        <p>Minutes per stream</p>
+        <input id="minutesPerItem" placeholder="30" size="16" onchange="setMinutesPerItem()">
+        <br /><br />
+        <p> Notes / tips</p>
+        <ul>
+            <li>Paste the entire YouTube URL into the Video ID field (eg https://www.youtube.com/watch?v=lTx3G6h2xyA)
+            </li>
+            <li>
+                A new video is auto played every 30 minutes, that duration can be changed above
+                for testing or live if you need (swapping between 30 and 60 minutes works well live, multiples of 15 are
+                kind of alright but a little janky).</li>
+            <li>The top video is played first</li>
+            <li>If the top video has an empty Video ID the system continue playing the current video (This could be
+                useful if you wanted to line things up before you go live)</li>
+            <li>Give me a video ID to use as default, unless you're okay with bon appetit</li>
+            <li>if you refresh this page you'll lose all of the stuff that you've queued up (saving is something
+                I'll get to tomorrow hopefully)</li>
+        </ul>
+
+
+    </div>
+    <button class="button" onclick="addNewRow()">New Item</button>
+
+    <ul id="queueTable"></ul>
+
+    <script>
+
+        var sortabeTable = document.getElementById("queueTable");
+        var nowPlayingVideoID = document.getElementById("playingVideoID");
+        var nowPlayingNote = document.getElementById("playingNote");
+        var nowPlayingRemaining = document.getElementById("playingRemaining");
+        var fieldMinutesPerItem = document.getElementById("minutesPerItem");
+
+        var listItems = [];
+        var playerWindow;
+
+        var minutesPerItem = 30;
+        fieldMinutesPerItem.value = minutesPerItem;
+
+        function openVideoWindow() {
+            playerWindow = window.open("youtubeEmbedTest.html", "_blank");
+            playerWindow.focus();
+        }
+        openVideoWindow();
+
+        function playNextVideo() {
+            if (listItems.length == 0 || listItems[0].videoID.value == "") {
+                updateTimes();
+                return;
+            }
+
+            playVideo(listItems[0].videoID.value);
+            nowPlayingNote.innerText = listItems[0].note.value;
+            nowPlayingVideoID.innerText = listItems[0].videoID.value;
+            listItems[0].removeVideo();
+
+        }
+
+        function playVideo(videoID) {
+            playerWindow.playVideo(videoID);
+        }
+
+        function addNewRow() {
+            sortabeTable.appendChild(makeItemRow());
+            sortable('#queueTable', {
+                forcePlaceholderSize: true,
+                hoverClass: 'highlight'
+            })[0].addEventListener('sortupdate', function (e) {
+                listItems = [];
+                for (let i = 0; i < e.detail.destination.items.length; i++) {
+                    listItems.push(e.detail.destination.items[i]);
+                    e.detail.destination.items[i].setPosition(i);
+                }
+            });
+            updateTimes();
+        }
+
+
+        function setMinutesPerItem() {
+            if (isNaN(fieldMinutesPerItem.value) || fieldMinutesPerItem.value == 0) {
+                fieldMinutesPerItem.value = minutesPerItem;
+            } else {
+                minutesPerItem = fieldMinutesPerItem.value;
+                lastPlayTime = undefined;
+                updateTimes();
+                checkTime();
+            }
+        }
+
+        function getNextPlayTimeInMiliseconds(queuePosition) {
+            return (Math.ceil(Date.now() / (minutesPerItem * 60 * 1000)) * minutesPerItem * 60 * 1000) + (minutesPerItem * 60 * 1000 * queuePosition);
+        }
+
+        // Thank you Internet friend for a few minutes saved :)
+        // https://gist.github.com/vankasteelj/74ab7793133f4b257ea3
+        var pad = function (num, size) { return ('000' + num).slice(size * -1); };
+        var time, hours, minutes, seconds, milliseconds;
+        function sec2time(timeInSeconds) {
+            time = parseFloat(timeInSeconds).toFixed(3);
+            hours = Math.floor(time / 60 / 60);
+            minutes = Math.floor(time / 60) % 60;
+            seconds = Math.floor(time - minutes * 60);
+
+            return pad(hours, 2) + ':' + pad(minutes, 2) + ':' + pad(seconds, 2);
+        }
+
+        function getLocalPlayTime(playPosition) {
+            return new Date(getNextPlayTimeInMiliseconds(playPosition));
+        }
+
+        setInterval(checkTime, 1000);
+        var nextPlayTime;
+        var lastPlayTime;
+        var dateRemainingCache;
+        var newTotalMinute;
+
+        function checkTime() {
+
+            nextPlayTime = getNextPlayTimeInMiliseconds(0);
+
+            nowPlayingRemaining.innerText = sec2time((nextPlayTime - (Date.now())) / 1000);
+
+            // console.log("nextPlayTime vs lastPlayTime");
+            // console.log(nextPlayTime + " vs " + lastPlayTime);
+
+            if (lastPlayTime == undefined)
+                lastPlayTime = nextPlayTime;
+
+            if (nextPlayTime > lastPlayTime) {
+                lastPlayTime = nextPlayTime;
+                playNextVideo();
+            }
+            // Called once per second
+        }
+
+        function getQueryVariable(getVar, url) {
+            var questionMarkPos = url.indexOf("?");
+            // Clean website out
+            if (questionMarkPos >= 0) {
+                url = url.substring(questionMarkPos)
+            }
+            // Check if we need to URL parse
+            if (url.includes("=")) {
+                var urlParams = new URLSearchParams(url);
+                return urlParams.get(getVar);
+            } else {
+                return url;
+            }
+        }
+
+        function makeItemRow() {
+            var listElement = document.createElement('li');
+
+            listElement.setPosition = function (index) {
+                playTime.innerText = getLocalPlayTime(index);
+            }
+
+            var playTime = document.createElement('div');
+            var playButton = document.createElement('button');
+            var testButton = document.createElement('button');
+            var note = document.createElement('input');
+            var videoID = document.createElement('input');
+            var removeButton = document.createElement('img');
+
+            note.placeholder = "Note / Name";
+            note.size = 16;
+            listElement.note = note;
+            videoID.placeholder = "Video ID";
+            videoID.size = 30;
+            videoID.onchange = function () {
+                console.log("parsing ", videoID.value)
+                videoID.value = getQueryVariable("v", videoID.value);
+            }
+            listElement.videoID = videoID;
+
+            testButton.textContent = "Test";
+
+            testButton.classList.add("blue");
+            testButton.onclick = function () {
+                console.log(videoID.value);
+                console.log("testing: " + ("https://www.youtube.com/watch?v=" + videoID.value));
+                var win = window.open("https://www.youtube.com/watch?v=" + videoID.value, '_blank');
+                win.focus();
+            };
+
+            listElement.removeVideo = function () {
+                listItems.splice(listItems.indexOf(listElement), 1);
+                listElement.remove();
+                updateTimes();
+            };
+
+            removeButton.src = "img/minus.svg";
+            removeButton.onclick = listElement.removeVideo;
+
+            listElement.appendChild(playTime);
+            listElement.appendChild(testButton);
+            listElement.appendChild(note);
+            listElement.appendChild(videoID);
+            listElement.appendChild(removeButton);
+
+            listItems.push(listElement);
+            return listElement;
+        }
+
+        function updateTimes() {
+            for (let i = 0; i < listItems.length; i++) {
+                listItems[i].setPosition(i);
+            }
+        }
+
+        addNewRow();
+        addNewRow();
+        addNewRow();
+    </script>
+</body>
+
+</html>
