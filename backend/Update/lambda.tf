@@ -21,29 +21,75 @@ resource "aws_lambda_function" "youtubeScheduler" {
   handler = "index.handler"
   runtime = "nodejs10.x"
 
-  role = aws_iam_role.lambda_exec.arn
+  role = "${aws_iam_role.lambda_exec.arn}"
+
+  tags = {
+    Name        = "YouTubeScheduler"
+    Environment = "production"
+  }
+}
+resource "aws_iam_policy" "lambda_policy" {
+  name        = "serverless_YouTubeSchedulerUpdate_policy"
+  path        = "/"
+  description = "IAM policy for DynamoDB and logging from a lambda"
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+        "Effect": "Allow",
+        "Action": [
+            "dynamodb:GetItem",
+            "dynamodb:PutItem",
+            "dynamodb:UpdateItem",
+            "dynamodb:DeleteItem"
+        ],
+        "Resource": "arn:aws:dynamodb:*:*:table/YouTubeScheduler-Schedule"
+    },
+    {
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:*:*:*",
+      "Effect": "Allow"
+    }
+  ]
+}
+EOF
 }
 
 # IAM role which dictates what other AWS services the Lambda function
 # may access.
 resource "aws_iam_role" "lambda_exec" {
-  name               = "serverless_YouTubeSchedulerUpdate_lambda"
+  name               = "serverless_YouTubeSchedulerUpdate_role"
   assume_role_policy = <<EOF
 {
     "Version": "2012-10-17",
     "Statement": [
         {
-        "Action": "sts:AssumeRole",
-        "Principal": {
-            "Service": "lambda.amazonaws.com"
-        },
-        "Effect": "Allow",
-        "Sid": ""
+            "Sid": "AllowLambdaExecute",
+            "Action": "sts:AssumeRole",
+            "Principal": {
+                "Service": "lambda.amazonaws.com"
+            },
+            "Effect": "Allow"
         }
     ]
 }
 EOF
 
+  tags = {
+    Name        = "YouTubeScheduler"
+    Environment = "production"
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_policy_attach" {
+  role       = "${aws_iam_role.lambda_exec.name}"
+  policy_arn = "${aws_iam_policy.lambda_policy.arn}"
 }
 
 resource "aws_lambda_permission" "apigw" {

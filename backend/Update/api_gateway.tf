@@ -1,6 +1,11 @@
 resource "aws_api_gateway_rest_api" "youtubeScheduler" {
   name        = "YouTubeSchedulerUpdateAPIGateway"
   description = "The YouTube Scheduler update API gateway"
+
+  tags = {
+    Name        = "YouTubeScheduler"
+    Environment = "production"
+  }
 }
 
 resource "aws_api_gateway_resource" "proxy" {
@@ -50,7 +55,7 @@ resource "aws_api_gateway_deployment" "youtubeScheduler" {
   ]
 
   rest_api_id = aws_api_gateway_rest_api.youtubeScheduler.id
-  stage_name  = "dev"
+  stage_name  = "prod"
 }
 
 output "base_url" {
