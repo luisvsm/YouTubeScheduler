@@ -1,4 +1,5 @@
 backend/.terraform
 backend/Update/node_modules
+backend/Update/dist
 .terraform.tfstate.lock.info
 config.tfvars
