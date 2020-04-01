@@ -5,7 +5,8 @@
   "main": "index.js",
   "dependencies": {
     "@types/aws-lambda": "^8.10.46",
-    "@types/node": "^13.9.8"
+    "@types/node": "^13.9.8",
+    "aws-sdk": "^2.650.0"
   },
   "devDependencies": {},
   "scripts": {
