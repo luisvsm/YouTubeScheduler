@@ -4,6 +4,11 @@ variable "app_zip" {
 variable "app_version" {
 }
 
+variable "LambdaEnvVars" {
+  type    = list(string)
+  default = []
+}
+
 provider "aws" {
   region = "us-east-1"
 }
@@ -21,7 +26,7 @@ resource "aws_lambda_function" "youtubeScheduler" {
   handler = "index.handler"
   runtime = "nodejs10.x"
 
-  role = "${aws_iam_role.lambda_exec.arn}"
+  role = aws_iam_role.lambda_exec.arn
 
   tags = {
     Name        = "YouTubeScheduler"
@@ -40,12 +45,11 @@ resource "aws_iam_policy" "lambda_policy" {
     {
         "Effect": "Allow",
         "Action": [
-            "dynamodb:GetItem",
-            "dynamodb:PutItem",
-            "dynamodb:UpdateItem",
-            "dynamodb:DeleteItem"
+          "s3:PutObject",
+          "s3:PutObjectAcl",
+          "s3:GetObject"
         ],
-        "Resource": "arn:aws:dynamodb:*:*:table/YouTubeScheduler-Schedule"
+        "Resource": "arn:aws:s3:::${var.ScheduleBucketName}/*"
     },
     {
       "Action": [
