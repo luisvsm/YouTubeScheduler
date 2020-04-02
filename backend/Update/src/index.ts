@@ -1,11 +1,12 @@
 import { APIGatewayEvent } from "aws-lambda";
 import AWS from 'aws-sdk'
 
-
 const s3: AWS.S3 = new AWS.S3({ apiVersion: '2006-03-01' });
 let bucket_name: string;
 let schedule_file: string;
 let update_secret: string;
+let cloudflare_bearer: string;
+let cloudflare_zone: string;
 
 if (process.env.SCHEDULE_FILE == undefined)
     throw "Missing SCHEDULE_FILE environment variable"
@@ -21,6 +22,16 @@ if (process.env.UPDATE_SECRET == undefined)
     throw "Missing UPDATE_SECRET environment variable"
 else
     update_secret = process.env.UPDATE_SECRET;
+
+if (process.env.CLOUDFLARE_BEARER == undefined)
+    throw "Missing UPDATE_SECRET environment variable"
+else
+    cloudflare_bearer = process.env.CLOUDFLARE_BEARER;
+
+if (process.env.CLOUDFLARE_ZONE == undefined)
+    throw "Missing UPDATE_SECRET environment variable"
+else
+    cloudflare_zone = process.env.CLOUDFLARE_ZONE;
 
 export const handler = async (event: APIGatewayEvent): Promise<any> => {
     console.log('Hello World!', JSON.stringify(event, null, 2));
@@ -60,6 +71,8 @@ export const handler = async (event: APIGatewayEvent): Promise<any> => {
             };
         });
 
+        await purgeCloudFlareCache();
+
         return {
             statusCode: 200,
             body: "",
@@ -95,9 +108,38 @@ async function putS3(
 function badSecret() {
     return {
         statusCode: 400,
-        body: "Bad Secret",
+        body: "Bad Request",
         headers: {
             "Access-Control-Allow-Origin": "https://" + bucket_name,
         }
     };
+}
+
+function purgeCloudFlareCache() {
+    return new Promise((resolve, reject) => {
+        const https = require('https');
+        const postData = JSON.stringify(
+            { "files": ["https://" + bucket_name + "/" + schedule_file] }
+        );
+
+        const options = {
+            hostname: 'api.cloudflare.com',
+            port: 443,
+            path: '/client/v4/zones/' + cloudflare_zone + '/purge_cache',
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + cloudflare_bearer,
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(postData)
+            }
+        };
+
+        const req = https.request(options);
+        req.write(postData);
+        req.end();
+        req.once('response', (res: any) => {
+            console.log('CloudFlare statusCode:', res.statusCode);
+            resolve();
+        });
+    });
 }
