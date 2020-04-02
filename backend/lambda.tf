@@ -26,6 +26,7 @@ resource "aws_lambda_function" "youtubeScheduler" {
   handler     = "index.handler"
   runtime     = "nodejs10.x"
   memory_size = "512"
+  timeout     = 10
 
   role = aws_iam_role.lambda_exec.arn
 

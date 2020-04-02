@@ -3,3 +3,6 @@ backend/Update/node_modules
 backend/Update/dist
 .terraform.tfstate.lock.info
 config.tfvars
+deploy.sh
+terraform.tfstate
+terraform.tfstate.backup
