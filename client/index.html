@@ -153,24 +153,6 @@
         <br />
         <p>Minutes per stream</p>
         <input id="minutesPerItem" placeholder="30" size="16" onchange="setMinutesPerItem()">
-        <br /><br />
-        <p> Notes / tips</p>
-        <ul>
-            <li>Paste the entire YouTube URL into the Video ID field (eg https://www.youtube.com/watch?v=lTx3G6h2xyA)
-            </li>
-            <li>
-                A new video is auto played every 30 minutes, that duration can be changed above
-                for testing or live if you need (swapping between 30 and 60 minutes works well live, multiples of 15 are
-                kind of alright but a little janky).</li>
-            <li>The top video is played first</li>
-            <li>If the top video has an empty Video ID the system continue playing the current video (This could be
-                useful if you wanted to line things up before you go live)</li>
-            <li>Give me a video ID to use as default, unless you're okay with bon appetit</li>
-            <li>if you refresh this page you'll lose all of the stuff that you've queued up (saving is something
-                I'll get to tomorrow hopefully)</li>
-        </ul>
-
-
     </div>
     <button class="button" onclick="addNewRow()">New Item</button>
 
@@ -190,11 +172,13 @@
         var minutesPerItem = 30;
         fieldMinutesPerItem.value = minutesPerItem;
 
+        /*
         function openVideoWindow() {
             playerWindow = window.open("youtubeEmbedTest.html", "_blank");
             playerWindow.focus();
         }
         openVideoWindow();
+        */
 
         function playNextVideo() {
             if (listItems.length == 0 || listItems[0].videoID.value == "") {
@@ -215,6 +199,10 @@
 
         function addNewRow() {
             sortabeTable.appendChild(makeItemRow());
+            setSortable();
+        }
+
+        function setSortable() {
             sortable('#queueTable', {
                 forcePlaceholderSize: true,
                 hoverClass: 'highlight'
@@ -240,6 +228,10 @@
             }
         }
 
+        // queuePosition
+        // 0 - up next
+        // 1 - etc
+        // 2 - etc
         function getNextPlayTimeInMiliseconds(queuePosition) {
             return (Math.ceil(Date.now() / (minutesPerItem * 60 * 1000)) * minutesPerItem * 60 * 1000) + (minutesPerItem * 60 * 1000 * queuePosition);
         }
@@ -301,32 +293,72 @@
             }
         }
 
-        function makeItemRow() {
+        function makeItemRow(
+            inputItem = {
+                Note: "",
+                VideoID: "",
+                StreamTitle: "",
+                StreamDescription: "",
+                DonationLink: "",
+                WebsiteLink: ""
+            }
+        ) {
+            var startTime;
             var listElement = document.createElement('li');
 
             listElement.setPosition = function (index) {
                 playTime.innerText = getLocalPlayTime(index);
+                StartTime = getNextPlayTimeInMiliseconds(index);
             }
 
             var playTime = document.createElement('div');
             var playButton = document.createElement('button');
             var testButton = document.createElement('button');
+
             var note = document.createElement('input');
             var videoID = document.createElement('input');
+            var streamTitle = document.createElement('input');
+            var streamDescription = document.createElement('input');
+            var donationLink = document.createElement('input');
+            var websiteLink = document.createElement('input');
+
             var removeButton = document.createElement('img');
 
-            note.placeholder = "Note / Name";
+            note.placeholder = "Note";
             note.size = 16;
+            note.value = inputItem.Note;
             listElement.note = note;
+
             videoID.placeholder = "Video ID";
             videoID.size = 30;
+            videoID.value = inputItem.VideoID;
             videoID.onchange = function () {
                 console.log("parsing ", videoID.value)
                 videoID.value = getQueryVariable("v", videoID.value);
             }
             listElement.videoID = videoID;
 
-            testButton.textContent = "Test";
+            streamTitle.placeholder = "Stream Title";
+            streamTitle.size = 20;
+            streamTitle.value = inputItem.StreamTitle;
+            listElement.streamTitle = streamTitle;
+
+            streamDescription.placeholder = "Stream Description";
+            streamDescription.size = 50;
+            streamDescription.value = inputItem.StreamDescription;
+            listElement.streamDescription = streamDescription;
+
+            donationLink.placeholder = "Donation Link";
+            donationLink.size = 20;
+            donationLink.value = inputItem.DonationLink;
+            listElement.donationLink = donationLink;
+
+            websiteLink.placeholder = "Website Link";
+            websiteLink.size = 20;
+            websiteLink.value = inputItem.WebsiteLink;
+            listElement.websiteLink = websiteLink;
+
+            testButton.textContent = "Test Video";
 
             testButton.classList.add("blue");
             testButton.onclick = function () {
@@ -349,7 +381,23 @@
             listElement.appendChild(testButton);
             listElement.appendChild(note);
             listElement.appendChild(videoID);
+            listElement.appendChild(streamTitle);
+            listElement.appendChild(streamDescription);
+            listElement.appendChild(donationLink);
+            listElement.appendChild(websiteLink);
             listElement.appendChild(removeButton);
+
+            listElement.export = function () {
+                return {
+                    StartTime: StartTime,
+                    Note: note.value,
+                    VideoID: videoID.value,
+                    StreamTitle: streamTitle.value,
+                    StreamDescription: streamDescription.value,
+                    DonationLink: donationLink.value,
+                    WebsiteLink: websiteLink.value
+                }
+            }
 
             listItems.push(listElement);
             return listElement;
@@ -359,6 +407,107 @@
             for (let i = 0; i < listItems.length; i++) {
                 listItems[i].setPosition(i);
             }
+        }
+
+        function exportCSV() {
+            var exportObj = exportObject();
+            var exportCSV = "";
+
+            exportCSV += '"StartTime",';
+            exportCSV += '"Note",';
+            exportCSV += '"VideoID",';
+            exportCSV += '"StreamTitle",';
+            exportCSV += '"StreamDescription",';
+            exportCSV += '"DonationLink",';
+            exportCSV += '"WebsiteLink"';
+            exportCSV += "\n";
+
+            for (let i = 0; i < exportObj.length; i++) {
+                exportCSV += '"' + exportObj[i].StartTime + '",';
+                exportCSV += '"' + exportObj[i].Note.replace(/"/g, '""') + '",';
+                exportCSV += '"' + exportObj[i].VideoID.replace(/"/g, '""') + '",';
+                exportCSV += '"' + exportObj[i].StreamTitle.replace(/"/g, '""') + '",';
+                exportCSV += '"' + exportObj[i].StreamDescription.replace(/"/g, '""') + '",';
+                exportCSV += '"' + exportObj[i].DonationLink.replace(/"/g, '""') + '",';
+                exportCSV += '"' + exportObj[i].WebsiteLink.replace(/"/g, '""') + '"';
+                exportCSV += "\n";
+            }
+
+            return exportCSV;
+        }
+
+        function importCSV(allText) {
+
+            var allTextLines = allText.split(/\r\n|\n/);
+            var headers = allTextLines[0].split(',');
+            console.log("headers", headers);
+            var lines = [];
+            for (let i = 0; i < headers.length; i++) {
+                headers[i] = headers[i].replace(/(^"|"$)/g, "").replace(/""/g, '"').trim();
+            }
+            console.log("headers", headers);
+
+            for (var i = 1; i < allTextLines.length; i++) {
+                var data = allTextLines[i].trim().split(',');
+                if (data.length == headers.length) {
+
+                    var importItem = {};
+                    for (var j = 0; j < headers.length; j++) {
+                        importItem[headers[j]] = data[j].replace(/(^"|"$)/g, "").replace(/""/g, '"');
+                    }
+                    lines.push(importItem);
+                }
+            }
+
+            for (var i = 1; i < lines.length; i++) {
+                lines[i].StartTime = parseInt(lines[i].StartTime, 10);
+            }
+            console.log(lines);
+            importObject(lines);
+        }
+
+        function exportJSON() {
+            return JSON.stringify(exportObject());
+        }
+
+        function exportObject() {
+            var exportObj = [];
+
+            for (let i = 0; i < listItems.length; i++) {
+                exportObj.push(listItems[i].export());
+            }
+
+            exportObj.sort(function (a, b) { return a.StartTime - b.StartTime });
+            return exportObj;
+        }
+
+        function importJSON(importObj) {
+            return importObject(JSON.parse(importObj));
+        }
+        function importObject(importObj) {
+            if (importObj == undefined || importObj.length < 1) {
+                return;
+            }
+
+            var importTime = Date.now();
+            importObj.sort(function (a, b) { return a.StartTime - b.StartTime });
+
+            // Remove existing elements
+            for (let i = 0; i < listItems.length; i++) {
+                sortabeTable.removeChild(listItems[i]);
+            }
+            listItems = [];
+
+            // Add imported elements
+            for (let i = 0; i < importObj.length; i++) {
+                if (importObj[i].StartTime > importTime) {
+                    sortabeTable.appendChild(makeItemRow(importObj[i]));
+                }
+            }
+            // Update times
+            updateTimes();
+            // Set up the sortable table
+            setSortable();
         }
 
         addNewRow();
