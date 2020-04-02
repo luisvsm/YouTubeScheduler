@@ -326,7 +326,7 @@
             var listElement = document.createElement('li');
 
             listElement.setPosition = function (index) {
-                playTime.innerText = getLocalPlayTime(index);
+                playTime.innerText = "End time: " + getLocalPlayTime(index);
                 EndTime = getNextPlayTimeInMiliseconds(index);
             }
 

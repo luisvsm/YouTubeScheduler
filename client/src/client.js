@@ -89,7 +89,7 @@ function updateNowPlaying() {
     StreamDescription.innerText = nowPlaying.StreamDescription;
 
     UpNextTitle.innerText = nextPlaying.StreamTitle
-    UpNextCountDown.innerText = "Not working yet :)"
+    UpNextCountDown.innerText = new Date(nowPlaying.EndTime);
 
     if (nowPlaying.WebsiteLink == "" || nowPlaying.WebsiteLink == undefined) {
         WebsiteLink.href = "#";
@@ -131,6 +131,7 @@ function playVideo(videoID) {
 }
 
 function startEverything() {
+    fetchRemoteSchedule();
     setInterval(fetchRemoteSchedule, RefreshCooldown);
     setInterval(updateNowPlaying, 1000);
 }
