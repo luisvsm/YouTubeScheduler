@@ -153,8 +153,17 @@
         <br />
         <p>Minutes per stream</p>
         <input id="minutesPerItem" placeholder="30" size="16" onchange="setMinutesPerItem()">
+        <br />
+        <p>Secret String</p>
+        <input id="secretString" placeholder="Not Set" size="16">
+        <button class="button"
+            onclick='setURLAndSecret(document.getElementById("secretString").value); document.getElementById("secretString").value="";'>
+            Set Secret
+        </button>
+        <div id="statusText"></div>
     </div>
     <button class="button" onclick="addNewRow()">New Item</button>
+    <button class="button orange" onclick="saveToScheduler()">Publish</button>
 
     <ul id="queueTable"></ul>
 
@@ -165,6 +174,16 @@
         var nowPlayingNote = document.getElementById("playingNote");
         var nowPlayingRemaining = document.getElementById("playingRemaining");
         var fieldMinutesPerItem = document.getElementById("minutesPerItem");
+
+        var statusText = document.getElementById("statusText");
+        var statusHistory = ["", "", "", "", ""];
+
+        function setStatus(statusString) {
+            for (let i = statusHistory; i < array.length; i--) {
+                const element = array[i];
+
+            }
+        }
 
         var listItems = [];
         var playerWindow;
@@ -303,12 +322,12 @@
                 WebsiteLink: ""
             }
         ) {
-            var startTime;
+            var EndTime;
             var listElement = document.createElement('li');
 
             listElement.setPosition = function (index) {
                 playTime.innerText = getLocalPlayTime(index);
-                StartTime = getNextPlayTimeInMiliseconds(index);
+                EndTime = getNextPlayTimeInMiliseconds(index);
             }
 
             var playTime = document.createElement('div');
@@ -389,7 +408,7 @@
 
             listElement.export = function () {
                 return {
-                    StartTime: StartTime,
+                    EndTime: EndTime,
                     Note: note.value,
                     VideoID: videoID.value,
                     StreamTitle: streamTitle.value,
@@ -413,7 +432,7 @@
             var exportObj = exportObject();
             var exportCSV = "";
 
-            exportCSV += '"StartTime",';
+            exportCSV += '"EndTime",';
             exportCSV += '"Note",';
             exportCSV += '"VideoID",';
             exportCSV += '"StreamTitle",';
@@ -423,7 +442,7 @@
             exportCSV += "\n";
 
             for (let i = 0; i < exportObj.length; i++) {
-                exportCSV += '"' + exportObj[i].StartTime + '",';
+                exportCSV += '"' + exportObj[i].EndTime + '",';
                 exportCSV += '"' + exportObj[i].Note.replace(/"/g, '""') + '",';
                 exportCSV += '"' + exportObj[i].VideoID.replace(/"/g, '""') + '",';
                 exportCSV += '"' + exportObj[i].StreamTitle.replace(/"/g, '""') + '",';
@@ -460,7 +479,7 @@
             }
 
             for (var i = 1; i < lines.length; i++) {
-                lines[i].StartTime = parseInt(lines[i].StartTime, 10);
+                lines[i].EndTime = parseInt(lines[i].EndTime, 10);
             }
 
             importObject(lines);
@@ -477,7 +496,7 @@
                 exportObj.push(listItems[i].export());
             }
 
-            exportObj.sort(function (a, b) { return a.StartTime - b.StartTime });
+            exportObj.sort(function (a, b) { return a.EndTime - b.EndTime });
             return exportObj;
         }
 
@@ -490,7 +509,7 @@
             }
 
             var importTime = Date.now();
-            importObj.sort(function (a, b) { return a.StartTime - b.StartTime });
+            importObj.sort(function (a, b) { return a.EndTime - b.EndTime });
 
             // Remove existing elements
             for (let i = 0; i < listItems.length; i++) {
@@ -500,7 +519,7 @@
 
             // Add imported elements
             for (let i = 0; i < importObj.length; i++) {
-                if (importObj[i].StartTime > importTime) {
+                if (importObj[i].EndTime > importTime) {
                     sortabeTable.appendChild(makeItemRow(importObj[i]));
                 }
             }
@@ -510,14 +529,56 @@
             setSortable();
         }
 
-        addNewRow();
-        addNewRow();
-        addNewRow();
-
         var secret;
         var requestURL;
+        var scheduleURL = "https://schedule.quarantineshow.com/schedule.json";
+
+        var secretCookie = document.cookie.replace(/(?:(?:^|.*;\s*)secretString\s*\=\s*([^;]*).*$)|^.*$/, "$1");
+        if (secretCookie != undefined && secretCookie != "") {
+            setURLAndSecret(secretCookie)
+        }
+
+        function setURLAndSecret(secretString) {
+            let secretObj;
+            try {
+                secretObj = JSON.parse(atob(secretString));
+            } catch (err) {
+                alert("Invalid secret");
+                return;
+            }
+
+            if (secretObj == undefined || secretObj.s == undefined || secretObj.r == undefined) {
+                alert("Invalid secret");
+                return;
+            } else {
+                secret = secretObj.s;
+                requestURL = secretObj.r;
+                document.cookie = "secretString=" + secretString + "; expires=Fri, 31 Dec 9999 23:59:59 GMT";
+                document.getElementById("secretString").placeholder = "Unchanged";
+            }
+        }
+
+        var scheduleURL = "https://schedule.quarantineshow.com/schedule.json";
+        function readRemoteSchedule() {
+            const request = new Request(scheduleURL, {
+                method: 'GET'
+            });
+
+            fetch(request)
+                .then((response) => {
+                    return response.json();
+                })
+                .then((data) => {
+                    importObject(data);
+                });
+        }
 
         function saveToScheduler() {
+            if (secret == undefined || secret == "") {
+                alert("Invalid secret");
+                return;
+            }
+
             scheduleString = exportJSON();
 
             const request = new Request(requestURL, {
@@ -527,10 +588,13 @@
                     schedule: scheduleString
                 })
             });
+
             fetch(request).then(response => {
                 console.log(response);
             });
         }
+
+        readRemoteSchedule();
     </script>
 </body>
 
