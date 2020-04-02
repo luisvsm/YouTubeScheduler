@@ -24,12 +24,12 @@ else
     update_secret = process.env.UPDATE_SECRET;
 
 if (process.env.CLOUDFLARE_BEARER == undefined)
-    throw "Missing UPDATE_SECRET environment variable"
+    throw "Missing CLOUDFLARE_BEARER environment variable"
 else
     cloudflare_bearer = process.env.CLOUDFLARE_BEARER;
 
 if (process.env.CLOUDFLARE_ZONE == undefined)
-    throw "Missing UPDATE_SECRET environment variable"
+    throw "Missing CLOUDFLARE_ZONE environment variable"
 else
     cloudflare_zone = process.env.CLOUDFLARE_ZONE;
 
