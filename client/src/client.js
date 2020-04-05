@@ -45,8 +45,7 @@ function readSchedule(newSchedule) {
     }
 
     schedule.sort(function (a, b) { return a.EndTime - b.EndTime });
-    lastEndTime = undefined;
-    updateNowPlaying();
+    updateNowPlaying(true);
 }
 
 function getNowPlaying() {
@@ -75,11 +74,12 @@ function getNextPlaying() {
 }
 
 var lastEndTime;
-function updateNowPlaying() {
+
+function updateNowPlaying(forceUpdate = false) {
     var nowPlaying = getNowPlaying();
 
     //We don't need to update anything, just early out.
-    if (lastEndTime == nowPlaying.EndTime)
+    if (!forceUpdate && lastEndTime == nowPlaying.EndTime)
         return;
 
     var nextPlaying = getNextPlaying();
@@ -103,7 +103,6 @@ function updateNowPlaying() {
             WebsiteLink.classList.remove('hidden');
     }
 
-
     if (nowPlaying.DonationLink == "" || nowPlaying.DonationLink == undefined) {
         DonationLink.href = "#";
 
@@ -120,6 +119,9 @@ function updateNowPlaying() {
 }
 
 var prevPlayedVideo;
+
+startEverything();
+
 function playVideo(videoID) {
     if (videoID != prevPlayedVideo) {
         player.loadVideoById({
@@ -158,12 +160,13 @@ function onYouTubeIframeAPIReady() {
             'onError': onPlayerError
         }
     });
-    startEverything();
+    updateNowPlaying(true);
 };
 
 // 4. The API will call this function when the video player is ready.
 function onPlayerReady(event) {
     console.log("onPlayerReady", event);
+    updateNowPlaying(true);
 }
 
 // 5. The API calls this function when the player's state changes.
