@@ -75,8 +75,23 @@ function getNextPlaying() {
 
 var lastEndTime;
 
+// Thank you Internet friend for a few minutes saved :)
+// https://gist.github.com/vankasteelj/74ab7793133f4b257ea3
+var pad = function (num, size) { return ('000' + num).slice(size * -1); };
+var time, hours, minutes, seconds, milliseconds;
+function sec2time(timeInSeconds) {
+    time = parseFloat(timeInSeconds).toFixed(3);
+    hours = Math.floor(time / 60 / 60);
+    minutes = Math.floor(time / 60) % 60;
+    seconds = Math.floor(time - minutes * 60);
+
+    return pad(hours, 2) + ':' + pad(minutes, 2) + ':' + pad(seconds, 2);
+}
+
 function updateNowPlaying(forceUpdate = false) {
     var nowPlaying = getNowPlaying();
+
+    UpNextCountDown.innerText = sec2time((nowPlaying.EndTime - (Date.now())) / 1000);
 
     //We don't need to update anything, just early out.
     if (!forceUpdate && lastEndTime == nowPlaying.EndTime)
@@ -89,7 +104,6 @@ function updateNowPlaying(forceUpdate = false) {
     StreamDescription.innerText = nowPlaying.StreamDescription;
 
     UpNextTitle.innerText = nextPlaying.StreamTitle
-    UpNextCountDown.innerText = new Date(nowPlaying.EndTime);
 
     if (nowPlaying.WebsiteLink == "" || nowPlaying.WebsiteLink == undefined) {
         WebsiteLink.href = "#";
