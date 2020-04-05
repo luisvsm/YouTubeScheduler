@@ -36,14 +36,15 @@ else
 export const handler = async (event: APIGatewayEvent): Promise<any> => {
     console.log('Hello World!', JSON.stringify(event, null, 2));
 
-    if (event.httpMethod == "POST" && event.path == "/update") {
-        var body;
-
+    if (event.httpMethod == "POST" && event.path == "/get") {
         if (event.body == null) {
             return badSecret();
         } else {
             try {
                 body = JSON.parse(event.body);
+                if (body.secret !== update_secret) {
+                    return badSecret();
+                }
             } catch (e) {
                 return badSecret();
             }
@@ -51,9 +52,56 @@ export const handler = async (event: APIGatewayEvent): Promise<any> => {
 
         console.log("body", body);
 
-        if (body.secret !== update_secret) {
-            return badSecret();
+        let s3Result: AWS.S3.Types.GetObjectOutput = await getS3({
+            Bucket: bucket_name,
+            Key: schedule_file
+        }).catch((error) => {
+            console.log(error);
+            return {
+                statusCode: 500,
+                body: JSON.stringify(error),
+                headers: {
+                    "Access-Control-Allow-Origin": "https://" + bucket_name,
+                }
+            };
+        }) as AWS.S3.Types.GetObjectOutput;
+
+        if (s3Result.Body == undefined) {
+            console.log("s3Result.Body == undefined");
+            console.log(s3Result);
+            return {
+                statusCode: 500,
+                body: "",
+                headers: {
+                    "Access-Control-Allow-Origin": "https://" + bucket_name,
+                }
+            };
+        } else {
+            return {
+                statusCode: 200,
+                body: s3Result.Body.toString(),
+                headers: {
+                    "Access-Control-Allow-Origin": "https://" + bucket_name,
+                }
+            };
         }
+    } else if (event.httpMethod == "POST" && event.path == "/update") {
+        var body;
+
+        if (event.body == null) {
+            return badSecret();
+        } else {
+            try {
+                body = JSON.parse(event.body);
+                if (body.secret !== update_secret) {
+                    return badSecret();
+                }
+            } catch (e) {
+                return badSecret();
+            }
+        }
+
+        console.log("body", body);
 
         await putS3({
             Bucket: bucket_name,
@@ -89,6 +137,20 @@ export const handler = async (event: APIGatewayEvent): Promise<any> => {
             }
         };
     }
+}
+
+async function getS3(
+    request: AWS.S3.Types.GetObjectRequest
+): Promise<AWS.S3.Types.GetObjectOutput> {
+    return new Promise((resolve, reject) => {
+        s3.getObject(request, (error, data) => {
+            if (error) {
+                return reject(error)
+            }
+
+            return resolve(data);
+        })
+    })
 }
 
 async function putS3(
