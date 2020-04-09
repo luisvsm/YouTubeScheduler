@@ -65,6 +65,11 @@ resource "aws_iam_policy" "lambda_policy" {
       ],
       "Resource": "arn:aws:logs:*:*:*",
       "Effect": "Allow"
+    },
+    {
+        "Effect": "Allow",
+        "Action": "cloudfront:CreateInvalidation",
+        "Resource": "arn:aws:cloudfront::061717901640:distribution/E3OVZFOPCJAGWZ"
     }
   ]
 }

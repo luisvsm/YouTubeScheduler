@@ -227,7 +227,7 @@
 
 
         function updateNowPlaying() {
-            if (listItems.length < historyLength || listItems[historyLength].videoID.value == "") {
+            if (listItems.length <= historyLength || listItems[historyLength].videoID.value == "") {
                 return;
             }
 
@@ -334,7 +334,7 @@
         }
 
         function removeHistoryItem() {
-            if (listItems != undefined || listItems.length > 3) {
+            if (listItems != undefined && listItems.length > 3) {
                 listItems[0].removeVideo();
             }
         }
@@ -579,6 +579,7 @@
         function importJSON(importObj) {
             return importObject(JSON.parse(importObj));
         }
+
         function importObject(importObj) {
             if (importObj == undefined || importObj.length < 1) {
                 return;
@@ -601,6 +602,18 @@
                     sortabeTable.appendChild(makeItemRow(importObj[i]));
                 }
             }
+
+            if (sortabeTable.children.length < 3) {
+                for (let i = importObj.length - sortabeTable.children.length - 1; i > 0; i--) {
+                    if (sortabeTable.children.length >= 3)
+                        break;
+
+                    sortabeTable.insertBefore(makeItemRow(importObj[i]), sortabeTable.children[0]);
+                }
+            }
+
+            updateListItemsFromTable();
+
             // Set up the sortable table
             setSortable();
         }

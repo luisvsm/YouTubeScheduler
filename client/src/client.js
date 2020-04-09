@@ -3,10 +3,13 @@ var scheduleURL = "https://schedule.quarantineshow.com/schedule.json";
 
 var WebsiteLink = document.getElementById("WebsiteLink");
 var DonationLink = document.getElementById("DonationLink");
+var DonationLinkText = document.getElementById("DonationLinkText");
+var WebsiteLinkText = document.getElementById("WebsiteLinkText");
 var StreamTitle = document.getElementById("StreamTitle");
 var StreamDescription = document.getElementById("StreamDescription");
 var UpNextTitle = document.getElementById("UpNextTitle");
 var UpNextCountDown = document.getElementById("UpNextCountDown");
+
 
 // 120 seconds * MS
 var RefreshCooldown = 120 * 1000;
@@ -14,8 +17,8 @@ var RefreshCooldown = 120 * 1000;
 var defaultVideo = {
     Note: "",
     VideoID: "2gHKDHmgVlU",
-    StreamTitle: "Default Title",
-    StreamDescription: "This is the default Video, give luis some copy to put in here :)",
+    StreamTitle: "The Quarantine Show",
+    StreamDescription: "is currently offline - enjoy some nature live-streams while we schedule our future",
     DonationLink: "",
     WebsiteLink: ""
 }
@@ -108,25 +111,42 @@ function updateNowPlaying(forceUpdate = false) {
     if (nowPlaying.WebsiteLink == "" || nowPlaying.WebsiteLink == undefined) {
         WebsiteLink.href = "#";
 
-        if (!WebsiteLink.classList.contains('hidden'))
+        if (!WebsiteLink.classList.contains('hidden')) {
             WebsiteLink.classList.add('hidden');
+
+            if (WebsiteLinkText != undefined)
+                WebsiteLinkText.classList.remove('hidden');
+        }
     } else {
         WebsiteLink.href = nowPlaying.WebsiteLink;
 
-        if (WebsiteLink.classList.contains('hidden'))
+        if (WebsiteLink.classList.contains('hidden')) {
             WebsiteLink.classList.remove('hidden');
+
+            if (WebsiteLinkText != undefined)
+                WebsiteLinkText.classList.remove('hidden');
+        }
+
     }
 
     if (nowPlaying.DonationLink == "" || nowPlaying.DonationLink == undefined) {
         DonationLink.href = "#";
 
-        if (!DonationLink.classList.contains('hidden'))
+        if (!DonationLink.classList.contains('hidden')) {
             DonationLink.classList.add('hidden');
+
+            if (DonationLinkText != undefined)
+                DonationLinkText.classList.add('hidden');
+        }
     } else {
         DonationLink.href = nowPlaying.DonationLink;
 
-        if (DonationLink.classList.contains('hidden'))
+        if (DonationLink.classList.contains('hidden')) {
             DonationLink.classList.remove('hidden');
+
+            if (DonationLinkText != undefined)
+                DonationLinkText.classList.remove('hidden');
+        }
     }
 
     playVideo(nowPlaying.VideoID);
@@ -136,17 +156,38 @@ var prevPlayedVideo;
 
 startEverything();
 
+function getQueryVariable(getVar, url) {
+    var questionMarkPos = url.indexOf("?");
+    // Clean website out
+    if (questionMarkPos >= 0) {
+        url = url.substring(questionMarkPos)
+    }
+    // Check if we need to URL parse
+    if (url.includes("=")) {
+        var urlParams = new URLSearchParams(url);
+        return urlParams.get(getVar);
+    } else {
+        return url;
+    }
+}
+
 function playVideo(videoID) {
-    if (videoID != prevPlayedVideo) {
+    if (player == undefined || player.getVideoUrl == undefined || player.loadVideoById == undefined) {
+        return;
+    }
+
+    playingVideoID = getQueryVariable("v", player.getVideoUrl());
+    if (videoID != playingVideoID) {
         player.loadVideoById({
             'videoId': videoID
         });
+        player.playVideo();
     }
-    player.playVideo();
     prevPlayedVideo = videoID;
 }
 
 function startEverything() {
+    updateNowPlaying(true);
     fetchRemoteSchedule();
     setInterval(fetchRemoteSchedule, RefreshCooldown);
     setInterval(updateNowPlaying, 1000);
@@ -174,7 +215,6 @@ function onYouTubeIframeAPIReady() {
             'onError': onPlayerError
         }
     });
-    updateNowPlaying(true);
 };
 
 // 4. The API will call this function when the video player is ready.

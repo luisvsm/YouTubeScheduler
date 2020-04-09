@@ -7,6 +7,7 @@ let schedule_file: string;
 let update_secret: string;
 let cloudflare_bearer: string;
 let cloudflare_zone: string;
+let cloudfront_dist_id: string;
 
 if (process.env.SCHEDULE_FILE == undefined)
     throw "Missing SCHEDULE_FILE environment variable"
@@ -32,6 +33,11 @@ if (process.env.CLOUDFLARE_ZONE == undefined)
     throw "Missing CLOUDFLARE_ZONE environment variable"
 else
     cloudflare_zone = process.env.CLOUDFLARE_ZONE;
+
+if (process.env.CLOUDFRONT_DIST_ID == undefined)
+    throw "Missing CLOUDFRONT_DIST_ID environment variable"
+else
+    cloudfront_dist_id = process.env.CLOUDFRONT_DIST_ID;
 
 export const handler = async (event: APIGatewayEvent): Promise<any> => {
     console.log('Hello World!', JSON.stringify(event, null, 2));
@@ -107,6 +113,7 @@ export const handler = async (event: APIGatewayEvent): Promise<any> => {
             Bucket: bucket_name,
             Key: schedule_file,
             Body: body.schedule,
+            CacheControl: "max-age=120",
             ContentType: 'application/json; charset=utf-8'
         }).catch((error) => {
             console.log(error);
@@ -120,6 +127,8 @@ export const handler = async (event: APIGatewayEvent): Promise<any> => {
         });
 
         await purgeCloudFlareCache();
+        await sleep(5000);
+        await purgeCloudFrontCache();
 
         return {
             statusCode: 200,
@@ -137,6 +146,10 @@ export const handler = async (event: APIGatewayEvent): Promise<any> => {
             }
         };
     }
+}
+
+function sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 async function getS3(
@@ -181,7 +194,7 @@ function purgeCloudFlareCache() {
     return new Promise((resolve, reject) => {
         const https = require('https');
         const postData = JSON.stringify(
-            { "files": ["https://" + bucket_name + "/" + schedule_file] }
+            { "files": ["https://" + bucket_name + "/" + schedule_file, { "url": "https://" + bucket_name + "/" + schedule_file, "headers": { "Origin": "https://quarantineshow.com" } }] }
         );
 
         const options = {
@@ -200,7 +213,35 @@ function purgeCloudFlareCache() {
         req.write(postData);
         req.end();
         req.once('response', (res: any) => {
+            if (res.statusCode != 200) {
+                console.log(res);
+            }
             console.log('CloudFlare statusCode:', res.statusCode);
+            resolve();
+        });
+    });
+}
+
+function purgeCloudFrontCache() {
+    return new Promise((resolve, reject) => {
+        var cloudfront = new AWS.CloudFront();
+
+        var params = {
+            DistributionId: cloudfront_dist_id, /* required */
+            InvalidationBatch: { /* required */
+                CallerReference: Date.now().toString(), /* required */
+                Paths: {
+                    Quantity: 1,
+                    Items: [
+                        '/' + schedule_file
+                    ]
+                }
+            }
+        };
+
+        cloudfront.createInvalidation(params, function (err, data) {
+            if (err) console.log(err, err.stack); // an error occurred
+            else console.log(data);           // successful response
             resolve();
         });
     });
