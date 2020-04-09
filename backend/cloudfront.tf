@@ -29,11 +29,12 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
   default_root_object = "index.html"
 
   default_cache_behavior {
-    allowed_methods  = ["GET", "HEAD"]
-    cached_methods   = ["GET", "HEAD"]
+    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
+    cached_methods   = ["GET", "HEAD", "OPTIONS"]
     target_origin_id = local.s3_origin_id
 
     forwarded_values {
+      headers      = ["Origin"]
       query_string = false
 
       cookies {
@@ -42,9 +43,9 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
     }
 
     viewer_protocol_policy = "allow-all"
-    min_ttl                = 3600
-    default_ttl            = 43200
-    max_ttl                = 86400
+    min_ttl                = 60
+    default_ttl            = 60
+    max_ttl                = 120
     compress               = true
   }
 
