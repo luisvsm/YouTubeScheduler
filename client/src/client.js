@@ -18,7 +18,7 @@ var defaultVideo = {
     Note: "",
     VideoID: "2gHKDHmgVlU",
     StreamTitle: "The Quarantine Show",
-    StreamDescription: "is currently offline - enjoy some nature live-streams while we schedule our future",
+    StreamDescription: "... is currently offline - enjoy some nature live-streams while we schedule our future.",
     DonationLink: "",
     WebsiteLink: ""
 }
@@ -115,7 +115,7 @@ function updateNowPlaying(forceUpdate = false) {
             WebsiteLink.classList.add('hidden');
 
             if (WebsiteLinkText != undefined)
-                WebsiteLinkText.classList.remove('hidden');
+                WebsiteLinkText.classList.add('hidden');
         }
     } else {
         WebsiteLink.href = nowPlaying.WebsiteLink;
