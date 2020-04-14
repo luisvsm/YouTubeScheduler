@@ -1,4 +1,5 @@
 var schedule = [];
+var featured = [];
 var scheduleURL = "https://schedule.quarantineshow.com/schedule.json";
 
 var WebsiteLink = document.getElementById("WebsiteLink");
@@ -10,9 +11,10 @@ var StreamDescription = document.getElementById("StreamDescription");
 var UpNextTitle = document.getElementById("UpNextTitle");
 var UpNextCountDown = document.getElementById("UpNextCountDown");
 
+var featuredItems = 4;
 
-// 120 seconds * MS
-var RefreshCooldown = 120 * 1000;
+// 30 seconds * MS
+var RefreshCooldown = 30 * 1000;
 
 var defaultVideo = {
     Note: "",
@@ -40,14 +42,23 @@ function fetchRemoteSchedule() {
 
 function readSchedule(newSchedule) {
     schedule = [];
+    featured = [];
 
     for (let i = 0; i < newSchedule.length; i++) {
         if (newSchedule[i].EndTime > Date.now()) {
-            schedule.push(newSchedule[i])
+            if (i >= 1) {
+                newSchedule[i].StartTime = newSchedule[i - 1].EndTime;
+            }
+            schedule.push(newSchedule[i]);
+
+            if (newSchedule[i].StartTime != undefined && newSchedule[i].Note != undefined && newSchedule[i].Note != "") {
+                featured.push(newSchedule[i]);
+            }
         }
     }
 
     schedule.sort(function (a, b) { return a.EndTime - b.EndTime });
+    featured.sort(function (a, b) { return a.EndTime - b.EndTime });
     updateNowPlaying(true);
 }
 
@@ -89,6 +100,21 @@ function sec2time(timeInSeconds) {
     seconds = Math.floor(time - minutes * 60);
 
     return pad(hours, 2) + ':' + pad(minutes, 2) + ':' + pad(seconds, 2);
+}
+
+function getDateTimeString(timestamp) {
+    const date = new Date(timestamp);
+    const options = { hour: 'numeric', minute: 'numeric', weekday: 'short', month: 'short', day: 'numeric', timeZone: 'EST', timeZoneName: 'short' };
+    return date.toLocaleDateString(undefined, options);
+}
+
+function listFeatured() {
+    var returnStr = "";
+    for (let i = 0; i < Math.min(featuredItems, featured.length); i++) {
+        returnStr += getDateTimeString(featured[i].StartTime) + " - ";
+        returnStr += featured[i].Note + "\n";
+    }
+    return returnStr;
 }
 
 function updateNowPlaying(forceUpdate = false) {
