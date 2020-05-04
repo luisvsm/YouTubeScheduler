@@ -349,6 +349,8 @@
             if (url.includes("=")) {
                 var urlParams = new URLSearchParams(url);
                 return urlParams.get(getVar);
+            } else if (url.includes("https://youtu.be/")) {
+                return url.substring(17)
             } else {
                 return url;
             }
