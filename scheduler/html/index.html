@@ -152,7 +152,17 @@
 </head>
 
 <body>
+    <!-- Load Facebook SDK for JavaScript -->
+    <div id="fb-root"></div>
+    <script async defer src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v3.2"></script>
+
     <div id="currentlyPlaying">
+
+        <iframe id="YouTubeEmbed" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen="" src="https://www.youtube.com/embed/2gHKDHmgVlU?enablejsapi=1" width="800" height="450"
+            frameborder="0"></iframe>
+        <div id="fbVideoContainer"></div>
+
         <b>Currently Playing</b>
         <br />
         <p>Note: </p>
@@ -192,6 +202,72 @@
         var nowPlayingNote = document.getElementById("playingNote");
         var nowPlayingRemaining = document.getElementById("playingRemaining");
         var fieldMinutesPerItem = document.getElementById("minutesPerItem");
+
+        var facebookVideoContainer = document.getElementById("fbVideoContainer");
+        var youtubeVideoContainer = document.getElementById("YouTubeEmbed");
+        facebookVideoContainer.style.display = "none";
+        youtubeVideoContainer.style.display = "block";
+
+        var lastVideoPlayed;
+        var ytReady = false;
+        function playVideo(videoIDOrLink) {
+            if (videoIDOrLink == lastVideoPlayed)
+                return;
+
+            lastVideoPlayed = videoIDOrLink;
+
+            if (videoIDOrLink.includes("facebook.com")) {
+                playFacebookVideo(videoIDOrLink);
+                player.stopVideo();
+                facebookVideoContainer.style.display = "block";
+                youtubeVideoContainer.style.display = "none";
+            } else {
+                playYouTubeVideo(videoIDOrLink);
+                facebookVideoContainer.style.display = "none";
+                youtubeVideoContainer.style.display = "block";
+            }
+        }
+
+        function playYouTubeVideo(videoID) {
+            if (ytReady == false) {
+                setTimeout(() => {
+                    playYouTubeVideo(videoID);
+                }, 250);
+            } else {
+                player.loadVideoById({
+                    'videoId': videoID
+                });
+                player.playVideo();
+            }
+        }
+        var firstTimeFacebookPlay = true;
+        function playFacebookVideo(facebookVideoLink) {
+            if (firstTimeFacebookPlay) {
+                firstTimeFacebookPlay = false;
+                FB.Event.subscribe('xfbml.ready', function (msg) {
+                    if (msg.type === 'video') {
+                        msg.instance.play();
+                    }
+                });
+            }
+
+            // Clear out the Facebook container
+            while (facebookVideoContainer.lastElementChild) {
+                facebookVideoContainer.removeChild(facebookVideoContainer.lastElementChild);
+            }
+            // Make a facebook video element
+            var facebookVideo = document.createElement('div');
+            facebookVideo.setAttribute("class", "fb-video");
+            facebookVideo.setAttribute("data-href", facebookVideoLink);
+            facebookVideo.setAttribute("data-allowfullscreen", "true");
+            facebookVideo.setAttribute("data-width", "500");
+
+            // Add it to the container
+            facebookVideoContainer.appendChild(facebookVideo);
+
+            //Tell the Facebook JS API about it
+            FB.XFBML.parse(facebookVideoContainer);
+        }
 
         var statusText = document.getElementById("statusText");
         var statusHistory = ["", "", "", "", "", "", "", "", "", ""];
@@ -340,17 +416,49 @@
         }
 
         function getQueryVariable(getVar, url) {
-            var questionMarkPos = url.indexOf("?");
-            // Clean website out
-            if (questionMarkPos >= 0) {
-                url = url.substring(questionMarkPos)
+            // Check if we need to URL parse
+            if (url.includes("https://youtu.be/")) {
+                // Cut https://youtu.be/ out of the string
+                url = url.substring(17);
+                var questionMarkPos = url.indexOf("?");
+                if (questionMarkPos >= 0) {
+                    url = url.substring(0, questionMarkPos)
+                }
+
+                return url;
+            } else if (url.includes("=")) {
+                var questionMarkPos = url.indexOf("?");
+                // Clean website out
+                if (questionMarkPos >= 0) {
+                    url = url.substring(questionMarkPos)
+                }
+
+                var urlParams = new URLSearchParams(url);
+                return urlParams.get(getVar);
+            } else {
+                return url;
             }
+        }
+
+        function getQueryVariable(getVar, url) {
             // Check if we need to URL parse
             if (url.includes("=")) {
+                var questionMarkPos = url.indexOf("?");
+                // Clean website out
+                if (questionMarkPos >= 0) {
+                    url = url.substring(questionMarkPos)
+                }
+
                 var urlParams = new URLSearchParams(url);
                 return urlParams.get(getVar);
             } else if (url.includes("https://youtu.be/")) {
-                return url.substring(17)
+                // Cut https://youtu.be/ out of the string
+                url = url.substring(17);
+                if (questionMarkPos >= 0) {
+                    url = url.substring(0, questionMarkPos)
+                }
+
+                return url;
             } else {
                 return url;
             }
@@ -448,10 +556,10 @@
 
             testButton.classList.add("blue");
             testButton.onclick = function () {
-                console.log(videoID.value);
-                console.log("testing: " + ("https://www.youtube.com/watch?v=" + videoID.value));
-                var win = window.open("https://www.youtube.com/watch?v=" + videoID.value, '_blank');
-                win.focus();
+                console.log("testing: " + videoID.value);
+                playVideo(videoID.value);
+                //var win = window.open("https://www.youtube.com/watch?v=" + videoID.value, '_blank');
+                //win.focus();
             };
 
             listElement.duplicateVideo = function () {
@@ -704,6 +812,48 @@
         }
 
         readRemoteSchedule();
+
+        // ----------- YouTube Player Code ----------------
+        var $ = document.querySelector.bind(document);
+
+        // 2. This code loads the IFrame Player API code asynchronously.
+        var tag = document.createElement('script');
+
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        // 3. This function creates an <iframe> (and YouTube player)
+        // after the API code downloads.
+        var player;
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('YouTubeEmbed', {
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange,
+                    'onError': onPlayerError
+                }
+            });
+        };
+
+        // 4. The API will call this function when the video player is ready.
+        function onPlayerReady(event) {
+            ytReady = true;
+            console.log("onPlayerReady", event);
+        }
+
+        // 5. The API calls this function when the player's state changes.
+        // The function indicates that when playing a video (state=1),
+        // the player should play for six seconds and then stop.
+
+        function onPlayerStateChange(event) {
+            console.log("onPlayerStateChange", event);
+        }
+
+        function onPlayerError(error) {
+            console.log("error", error);
+        }
     </script>
 </body>
 

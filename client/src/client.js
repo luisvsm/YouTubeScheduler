@@ -178,8 +178,6 @@ function updateNowPlaying(forceUpdate = false) {
     playVideo(nowPlaying.VideoID);
 }
 
-var prevPlayedVideo;
-
 startEverything();
 
 function getQueryVariable(getVar, url) {
@@ -197,19 +195,73 @@ function getQueryVariable(getVar, url) {
     }
 }
 
-function playVideo(videoID) {
-    if (player == undefined || player.getVideoUrl == undefined || player.loadVideoById == undefined) {
-        return;
-    }
+var facebookVideoContainer = document.getElementById("fbVideoContainer");
+var youtubeVideoContainer = document.getElementById("YouTubeEmbed");
+facebookVideoContainer.style.display = "none";
+youtubeVideoContainer.style.display = "block";
 
-    playingVideoID = getQueryVariable("v", player.getVideoUrl());
-    if (videoID != playingVideoID) {
-        player.loadVideoById({
-            'videoId': videoID
-        });
+var lastVideoPlayed;
+var ytReady = false;
+function playVideo(videoIDOrLink) {
+    if (videoIDOrLink == lastVideoPlayed)
+        return;
+
+    lastVideoPlayed = videoIDOrLink;
+
+    if (videoIDOrLink.includes("facebook.com")) {
+        playFacebookVideo(videoIDOrLink);
+        player.stopVideo();
+        facebookVideoContainer.style.display = "block";
+        youtubeVideoContainer.style.display = "none";
+    } else {
+        playYouTubeVideo(videoIDOrLink);
+        facebookVideoContainer.style.display = "none";
+        youtubeVideoContainer.style.display = "block";
+    }
+}
+
+function playYouTubeVideo(videoID) {
+    if (ytReady == false) {
+        setTimeout(() => {
+            playYouTubeVideo(videoID);
+        }, 250);
+    } else {
+        playingVideoID = getQueryVariable("v", player.getVideoUrl());
+        if (videoID != playingVideoID) {
+            player.loadVideoById({
+                'videoId': videoID
+            });
+        }
         player.playVideo();
     }
-    prevPlayedVideo = videoID;
+}
+var firstTimeFacebookPlay = true;
+function playFacebookVideo(facebookVideoLink) {
+    if (firstTimeFacebookPlay) {
+        firstTimeFacebookPlay = false;
+        FB.Event.subscribe('xfbml.ready', function (msg) {
+            if (msg.type === 'video') {
+                msg.instance.play();
+            }
+        });
+    }
+
+    // Clear out the Facebook container
+    while (facebookVideoContainer.lastElementChild) {
+        facebookVideoContainer.removeChild(facebookVideoContainer.lastElementChild);
+    }
+    // Make a facebook video element
+    var facebookVideo = document.createElement('div');
+    facebookVideo.setAttribute("class", "fb-video");
+    facebookVideo.setAttribute("data-href", facebookVideoLink);
+    facebookVideo.setAttribute("data-allowfullscreen", "true");
+    facebookVideo.setAttribute("data-width", "500");
+
+    // Add it to the container
+    facebookVideoContainer.appendChild(facebookVideo);
+
+    //Tell the Facebook JS API about it
+    FB.XFBML.parse(facebookVideoContainer);
 }
 
 function startEverything() {
@@ -246,7 +298,7 @@ function onYouTubeIframeAPIReady() {
 // 4. The API will call this function when the video player is ready.
 function onPlayerReady(event) {
     console.log("onPlayerReady", event);
-    updateNowPlaying(true);
+    ytReady = true;
 }
 
 // 5. The API calls this function when the player's state changes.
