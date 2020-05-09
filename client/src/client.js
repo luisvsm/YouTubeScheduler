@@ -11,6 +11,11 @@ var StreamDescription = document.getElementById("StreamDescription");
 var UpNextTitle = document.getElementById("UpNextTitle");
 var UpNextCountDown = document.getElementById("UpNextCountDown");
 
+var facebookVideoContainer = document.getElementById("fbVideoContainer");
+var youtubeVideoContainer = document.getElementById("YouTubeEmbed");
+facebookVideoContainer.style.display = "none";
+youtubeVideoContainer.style.display = "block";
+
 var featuredItems = 4;
 
 // 30 seconds * MS
@@ -118,6 +123,14 @@ function listFeatured() {
 }
 
 function updateNowPlaying(forceUpdate = false) {
+    if (!playersAreReady()) {
+        setTimeout(() => {
+            updateNowPlaying(false);
+        }, 250);
+        lastEndTime = -1;
+        return;
+    }
+
     var nowPlaying = getNowPlaying();
 
     UpNextCountDown.innerText = sec2time((nowPlaying.EndTime - (Date.now())) / 1000);
@@ -195,13 +208,10 @@ function getQueryVariable(getVar, url) {
     }
 }
 
-var facebookVideoContainer = document.getElementById("fbVideoContainer");
-var youtubeVideoContainer = document.getElementById("YouTubeEmbed");
-facebookVideoContainer.style.display = "none";
-youtubeVideoContainer.style.display = "block";
 
 var lastVideoPlayed;
 var ytReady = false;
+
 function playVideo(videoIDOrLink) {
     if (videoIDOrLink == lastVideoPlayed)
         return;
@@ -210,7 +220,8 @@ function playVideo(videoIDOrLink) {
 
     if (videoIDOrLink.includes("facebook.com")) {
         playFacebookVideo(videoIDOrLink);
-        player.stopVideo();
+        if (player.stopVideo != undefined)
+            player.stopVideo();
         facebookVideoContainer.style.display = "block";
         youtubeVideoContainer.style.display = "none";
     } else {
@@ -221,22 +232,22 @@ function playVideo(videoIDOrLink) {
 }
 
 function playYouTubeVideo(videoID) {
-    if (ytReady == false) {
-        setTimeout(() => {
-            playYouTubeVideo(videoID);
-        }, 250);
-    } else {
-        playingVideoID = getQueryVariable("v", player.getVideoUrl());
-        if (videoID != playingVideoID) {
-            player.loadVideoById({
-                'videoId': videoID
-            });
-        }
-        player.playVideo();
+    playingVideoID = getQueryVariable("v", player.getVideoUrl());
+    if (videoID != playingVideoID) {
+        player.loadVideoById({
+            'videoId': videoID
+        });
     }
+    player.playVideo();
 }
+
+function playersAreReady() {
+    return typeof (FB) != 'undefined' && FB != null != undefined && ytReady && player != undefined && player.getVideoUrl != undefined && player.loadVideoById != undefined;
+}
+
 var firstTimeFacebookPlay = true;
 function playFacebookVideo(facebookVideoLink) {
+    /*
     if (firstTimeFacebookPlay) {
         firstTimeFacebookPlay = false;
         FB.Event.subscribe('xfbml.ready', function (msg) {
@@ -244,7 +255,7 @@ function playFacebookVideo(facebookVideoLink) {
                 msg.instance.play();
             }
         });
-    }
+    }*/
 
     // Clear out the Facebook container
     while (facebookVideoContainer.lastElementChild) {
@@ -255,7 +266,8 @@ function playFacebookVideo(facebookVideoLink) {
     facebookVideo.setAttribute("class", "fb-video");
     facebookVideo.setAttribute("data-href", facebookVideoLink);
     facebookVideo.setAttribute("data-allowfullscreen", "true");
-    facebookVideo.setAttribute("data-width", "500");
+    facebookVideo.setAttribute("data-width", "800");
+    facebookVideo.setAttribute("data-autoplay", "true");
 
     // Add it to the container
     facebookVideoContainer.appendChild(facebookVideo);

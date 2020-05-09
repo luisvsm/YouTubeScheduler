@@ -210,6 +210,7 @@
 
         var lastVideoPlayed;
         var ytReady = false;
+
         function playVideo(videoIDOrLink) {
             if (videoIDOrLink == lastVideoPlayed)
                 return;
@@ -218,7 +219,8 @@
 
             if (videoIDOrLink.includes("facebook.com")) {
                 playFacebookVideo(videoIDOrLink);
-                player.stopVideo();
+                if (player.stopVideo != undefined)
+                    player.stopVideo();
                 facebookVideoContainer.style.display = "block";
                 youtubeVideoContainer.style.display = "none";
             } else {
@@ -240,6 +242,7 @@
                 player.playVideo();
             }
         }
+
         var firstTimeFacebookPlay = true;
         function playFacebookVideo(facebookVideoLink) {
             if (firstTimeFacebookPlay) {
@@ -260,7 +263,7 @@
             facebookVideo.setAttribute("class", "fb-video");
             facebookVideo.setAttribute("data-href", facebookVideoLink);
             facebookVideo.setAttribute("data-allowfullscreen", "true");
-            facebookVideo.setAttribute("data-width", "500");
+            facebookVideo.setAttribute("data-width", "800");
 
             // Add it to the container
             facebookVideoContainer.appendChild(facebookVideo);
