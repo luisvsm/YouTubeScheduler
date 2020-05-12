@@ -242,11 +242,11 @@ function playYouTubeVideo(videoID) {
 }
 
 function playersAreReady() {
-    return typeof (FB) != 'undefined' && FB != null != undefined && ytReady && player != undefined && player.getVideoUrl != undefined && player.loadVideoById != undefined;
+    return ytReady && player != undefined && player.getVideoUrl != undefined && player.loadVideoById != undefined;
 }
 
 var firstTimeFacebookPlay = true;
-function playFacebookVideo(facebookVideoLink) {
+function playFacebookVideo(facebookVideoLink, retrycount = 0) {
     /*
     if (firstTimeFacebookPlay) {
         firstTimeFacebookPlay = false;
@@ -256,24 +256,44 @@ function playFacebookVideo(facebookVideoLink) {
             }
         });
     }*/
-
     // Clear out the Facebook container
     while (facebookVideoContainer.lastElementChild) {
         facebookVideoContainer.removeChild(facebookVideoContainer.lastElementChild);
     }
-    // Make a facebook video element
-    var facebookVideo = document.createElement('div');
-    facebookVideo.setAttribute("class", "fb-video");
-    facebookVideo.setAttribute("data-href", facebookVideoLink);
-    facebookVideo.setAttribute("data-allowfullscreen", "true");
-    facebookVideo.setAttribute("data-width", "800");
-    facebookVideo.setAttribute("data-autoplay", "true");
 
-    // Add it to the container
-    facebookVideoContainer.appendChild(facebookVideo);
+    if (typeof (FB) == 'undefined' || FB == null) {
+        var facebookMissingTitle = document.createElement('h2');
+        var facebookMissingBody = document.createElement('div');
+        facebookMissingTitle.innerText = "Firefox is currently having trouble playing this video.";
+        facebookMissingBody.innerText = "Please try watching the Quarantine Show in Chrome or Safari, or changing your privacy settings.";
 
-    //Tell the Facebook JS API about it
-    FB.XFBML.parse(facebookVideoContainer);
+        // Add it to the container
+        facebookVideoContainer.appendChild(facebookMissingTitle);
+        facebookVideoContainer.appendChild(facebookMissingBody);
+        facebookVideoContainer.setAttribute("class", "missing-sdk");
+
+        //retry in case it loads late
+        if (retrycount < 10)
+            setTimeout(() => {
+                playFacebookVideo(facebookVideoLink, retrycount + 1);
+            }, 250);
+    } else {
+        // Make a facebook video element
+        var facebookVideo = document.createElement('div');
+        facebookVideo.setAttribute("class", "fb-video");
+        facebookVideo.setAttribute("data-href", facebookVideoLink);
+        facebookVideo.setAttribute("data-allowfullscreen", "true");
+        facebookVideo.setAttribute("data-width", "840");
+        facebookVideo.setAttribute("data-autoplay", "true");
+
+        // Add it to the container
+        facebookVideoContainer.appendChild(facebookVideo);
+        facebookVideoContainer.setAttribute("class", "");
+
+        //Tell the Facebook JS API about it
+        FB.XFBML.parse(facebookVideoContainer);
+    }
+
 }
 
 function startEverything() {

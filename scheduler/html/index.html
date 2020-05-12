@@ -244,32 +244,40 @@
         }
 
         var firstTimeFacebookPlay = true;
-        function playFacebookVideo(facebookVideoLink) {
-            if (firstTimeFacebookPlay) {
-                firstTimeFacebookPlay = false;
-                FB.Event.subscribe('xfbml.ready', function (msg) {
-                    if (msg.type === 'video') {
-                        msg.instance.play();
-                    }
-                });
-            }
-
+        function playFacebookVideo(facebookVideoLink, retrycount = 0) {
             // Clear out the Facebook container
             while (facebookVideoContainer.lastElementChild) {
                 facebookVideoContainer.removeChild(facebookVideoContainer.lastElementChild);
             }
-            // Make a facebook video element
-            var facebookVideo = document.createElement('div');
-            facebookVideo.setAttribute("class", "fb-video");
-            facebookVideo.setAttribute("data-href", facebookVideoLink);
-            facebookVideo.setAttribute("data-allowfullscreen", "true");
-            facebookVideo.setAttribute("data-width", "800");
 
-            // Add it to the container
-            facebookVideoContainer.appendChild(facebookVideo);
+            if (typeof (FB) == 'undefined' || FB == null) {
+                var facebookVideo = document.createElement('div');
+                facebookVideo.setAttribute("class", "fb-video missing-sdk");
+                facebookVideo.innerText = "Firefox is currently having trouble playing this video. Please try watching the Quarantine Show in Chrome or Safari, or changing your privacy settings.";
+                // Add it to the container
+                facebookVideoContainer.appendChild(facebookVideo);
 
-            //Tell the Facebook JS API about it
-            FB.XFBML.parse(facebookVideoContainer);
+                //retry in case it loads late
+                if (retrycount < 10)
+                    setTimeout(() => {
+                        playFacebookVideo(facebookVideoLink, retrycount + 1);
+                    }, 250);
+            } else {
+                // Make a facebook video element
+                var facebookVideo = document.createElement('div');
+                facebookVideo.setAttribute("class", "fb-video");
+                facebookVideo.setAttribute("data-href", facebookVideoLink);
+                facebookVideo.setAttribute("data-allowfullscreen", "true");
+                facebookVideo.setAttribute("data-width", "840");
+                facebookVideo.setAttribute("data-autoplay", "true");
+
+                // Add it to the container
+                facebookVideoContainer.appendChild(facebookVideo);
+
+                //Tell the Facebook JS API about it
+                FB.XFBML.parse(facebookVideoContainer);
+            }
+
         }
 
         var statusText = document.getElementById("statusText");
